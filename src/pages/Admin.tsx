@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db, auth, storage } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { doc, getDoc, setDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, orderBy, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Product, Order, CATEGORIES, ORDER_STATUSES } from '../types';
 import { Lock, LogOut, Package, ShoppingBag, Plus, Edit2, Trash2, X, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -312,45 +311,81 @@ function ProductEditorModal({ product, onClose }: { product: Partial<Product>, o
     if (!file) return;
     
     setUploading(true);
-    const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
     
-    uploadTask.on('state_changed', 
-      (snapshot) => {}, 
-      (error) => {
-        alert("Error al subir imagen");
-        setUploading(false);
-      }, 
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        setFormData(prev => ({...prev, imageUrl: downloadURL}));
-        setUploading(false);
-      }
-    );
+    try {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setFormData(prev => ({...prev, imageUrl: dataUrl}));
+          setUploading(false);
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Error al procesar imagen", err);
+      alert("Error al procesar imagen");
+      setUploading(false);
+    }
   };
   
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (uploading) return;
     try {
-      const dataToSave = {
-        ...formData,
+      const dataToSave = { ...formData };
+      delete dataToSave.id;
+
+      const finalData = {
+        ...dataToSave,
         price: Number(formData.price),
         stock: Number(formData.stock),
         availablePatches: patchesStr.split(',').map(s => s.trim()).filter(Boolean),
         updatedAt: serverTimestamp()
       };
       
+      // Remove any undefined values
+      Object.keys(finalData).forEach(key => {
+        if (finalData[key as keyof typeof finalData] === undefined) {
+          delete finalData[key as keyof typeof finalData];
+        }
+      });
+      
       if (formData.id) {
-        await updateDoc(doc(db, 'products', formData.id), dataToSave);
+        await updateDoc(doc(db, 'products', formData.id), finalData);
       } else {
         await addDoc(collection(db, 'products'), {
-          ...dataToSave,
+          ...finalData,
           createdAt: serverTimestamp()
         });
       }
       onClose();
     } catch(err) {
+      console.error(err);
       alert("Error al guardar producto");
     }
   };
