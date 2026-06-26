@@ -1,0 +1,101 @@
+{
+  "entities": {
+    "Role": {
+      "title": "Role",
+      "description": "User role document for admin access",
+      "type": "object",
+      "properties": {
+        "password": { "type": "string" },
+        "isAdmin": { "type": "boolean" }
+      },
+      "required": ["password", "isAdmin"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A football shirt product",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "team": { "type": "string" },
+        "league": { "type": "string" },
+        "season": { "type": "string" },
+        "price": { "type": "number" },
+        "description": { "type": "string" },
+        "stock": { "type": "number" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "allowCustomName": { "type": "boolean" },
+        "allowCustomNumber": { "type": "boolean" },
+        "allowPatches": { "type": "boolean" },
+        "availablePatches": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "type": "number", "description": "Timestamp" },
+        "updatedAt": { "type": "number", "description": "Timestamp" }
+      },
+      "required": [
+        "name", "team", "league", "season", "price", "description",
+        "stock", "category", "imageUrl", "allowCustomName", "allowCustomNumber",
+        "allowPatches", "availablePatches", "createdAt", "updatedAt"
+      ]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "customerName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "department": { "type": "string" },
+        "city": { "type": "string" },
+        "zipCode": { "type": "string" },
+        "notes": { "type": "string" },
+        "items": {
+          "type": "array"
+        },
+        "totalPrice": { "type": "number" },
+        "createdAt": { "type": "number", "description": "Timestamp" },
+        "updatedAt": { "type": "number", "description": "Timestamp" }
+      },
+      "required": [
+        "userId", "orderNumber", "status", "customerName", "phone", "email",
+        "address", "department", "city", "zipCode", "notes", "items", "totalPrice",
+        "createdAt", "updatedAt"
+      ]
+    },
+    "FavoriteItem": {
+      "title": "FavoriteItem",
+      "description": "A favorited product reference",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "createdAt": { "type": "number", "description": "Timestamp" }
+      },
+      "required": ["productId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "roles/{userId}": {
+      "schema": "Role",
+      "description": "Stores user roles"
+    },
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Stores football shirts"
+    },
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "Stores customer orders (contains PII)"
+    },
+    "users/{userId}/favorites/{favoriteId}": {
+      "schema": "FavoriteItem",
+      "description": "Stores favorited products for a user"
+    }
+  }
+}
